@@ -60,7 +60,10 @@ class MultiHeadAttentionLayer(nn.Module):
         
         self.out_dim = out_dim
         self.num_heads = num_heads
-        
+        '''
+        Q,K,V를 각각 Linear Layer (leanable parameters)로 embedding 
+        proj_e는 입력 edge feature를 score를 계산하기 위함. Edge의 weight를 넣어주는 곳
+        '''
         if use_bias:
             self.Q = nn.Linear(in_dim, out_dim * num_heads, bias=True)
             self.K = nn.Linear(in_dim, out_dim * num_heads, bias=True)
@@ -79,7 +82,8 @@ class MultiHeadAttentionLayer(nn.Module):
         # scaling
         g.apply_edges(scaling('score', np.sqrt(self.out_dim)))
         
-        # Use available edge features to modify the scores
+        # Use available edge features to modify the scores 
+        # Node feature로만 계산한 score에 edge weight까지 고려해서 update
         g.apply_edges(imp_exp_attn('score', 'proj_e'))
         
         # Copy edge features as e_out to be passed to FFN_e
@@ -220,3 +224,11 @@ class GraphTransformerLayer(nn.Module):
         return '{}(in_channels={}, out_channels={}, heads={}, residual={})'.format(self.__class__.__name__,
                                              self.in_channels,
                                              self.out_channels, self.num_heads, self.residual)
+    
+
+if __name__ == "__main__":
+    g = dgl.heterograph({
+        ('user', 'follows', 'user'): (torch.tensor([0, 1, 2, 3, 4]), torch.tensor([1, 2, 3, 4, 0]))
+    })
+    print(g)
+    
